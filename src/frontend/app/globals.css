@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-night text-neonPink min-h-screen font-sans;
+  background: radial-gradient(circle at top left, rgba(138, 95, 255, 0.4), transparent 40%),
+    radial-gradient(circle at bottom right, rgba(255, 61, 124, 0.35), transparent 45%),
+    #050109;
+}
+
+::selection {
+  background: rgba(53, 240, 255, 0.4);
+  color: #ffffff;
+}
+
+a {
+  @apply text-neonBlue hover:text-neonPink transition-colors;
+}
