@@ -1,0 +1,127 @@
+{
+  "app": {
+    "brand": {
+      "subtitle": "FIAP Next Challenge",
+      "title": "Code Evaluator"
+    },
+    "liveInsights": {
+      "title": "Live insights",
+      "description": "Configure challenge rules, onboard repositories, and monitor evaluations in real time—all from this panel."
+    },
+    "metadata": {
+      "title": "FIAP Next Challenge | Code Evaluator",
+      "description": "Live code quality ranking for the FIAP Next Challenge"
+    },
+    "languageLabel": "Language",
+    "languages": {
+      "en": "English",
+      "pt": "Portuguese"
+    }
+  },
+  "nav": {
+    "overview": "Overview",
+    "configuration": "Configuration",
+    "rank": "Rank"
+  },
+  "home": {
+    "headline": "FIAP Next Challenge",
+    "tagline": "Welcome to the live code quality arena. Configure your challenge criteria, onboard GitHub repositories, and watch the ranking update as evaluations roll in. Choose a challenge below to explore its rules.",
+    "selectLabel": "Select a challenge",
+    "selectPlaceholder": "Pick a challenge",
+    "emptyPlaceholder": "No challenges found",
+    "loading": "Loading rules...",
+    "error": "Unable to load challenges. Please try again later.",
+    "expectedOutcome": "Expected Outcome",
+    "evaluationCriteria": "Evaluation Criteria",
+    "noChallenge": "No challenge selected yet.",
+    "pickFirst": "Pick first available challenge",
+    "score": "Score multiplier",
+    "concept": "Concept"
+  },
+  "configuration": {
+    "headerTitle": "Configure your challenge",
+    "headerSubtitle": "Create challenge definitions, add evaluation criteria, and route repositories for the live scoreboard.",
+    "createButton": "Create challenge",
+    "modal": {
+      "title": "Create new challenge",
+      "description": "Set the foundation and list criteria that each repository must satisfy.",
+      "namePlaceholder": "Challenge name",
+      "objectivePlaceholder": "Describe the core objective",
+      "outcomePlaceholder": "Explain the expected outcome",
+      "criteriaSection": "Evaluation criteria",
+      "addCriterion": "Add criterion",
+      "emptyCriteria": "No evaluation criteria yet. Add one to get started.",
+      "editTitle": "Edit evaluation criterion",
+      "addTitle": "Add evaluation criterion",
+      "save": "Save",
+      "add": "Add",
+      "delete": "Delete criterion",
+      "criterion": {
+        "name": "Criteria name",
+        "description": "What should be evaluated?",
+        "score": "Score multiplier",
+        "concept": "Code concept",
+        "noDescription": "No description provided",
+        "multiplierLabel": "Multiplier",
+        "conceptLabel": "Concept",
+        "notSet": "Not set"
+      }
+    },
+    "listEmpty": "No challenges yet. Create one to get started.",
+    "addCriteriaModal": {
+      "title": "Add criteria to {{name}}",
+      "descriptionPlaceholder": "Describe what success looks like for this criteria",
+      "fallbackName": "challenge"
+    }
+  },
+  "challengeCard": {
+    "expectedResult": "Expected Result",
+    "viewRepos": "View repos",
+    "criteria": "Criteria",
+    "addCriteria": "Add criteria",
+    "multiplier": "Multiplier",
+    "concept": "Concept",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "toggleLabel": "Toggle challenge active state",
+    "activate": "Activate",
+    "deactivate": "Deactivate"
+  },
+  "rank": {
+    "title": "Live ranking",
+    "description": "Keep this page open to watch repositories climb the leaderboard as evaluations complete in real time.",
+    "challengeLabel": "Challenge",
+    "selectPlaceholder": "Select a challenge",
+    "selectEmpty": "No challenges",
+    "table": {
+      "repository": "Repository",
+      "score": "Score",
+      "status": "Status",
+      "link": "Link",
+      "view": "View on GitHub",
+      "empty": "No repositories evaluated yet.",
+      "unscored": "Unscored"
+    },
+    "modal": {
+      "title": "Evaluation details",
+      "close": "Close",
+      "loading": "Loading evaluation details...",
+      "score": "Score",
+      "noReasoning": "No reasoning provided.",
+      "suggestion": "Suggestion",
+      "noSuggestion": "No suggestion registered.",
+      "updated": "Updated",
+      "noEvaluations": "This repository has not been evaluated yet or results are pending."
+    }
+  },
+  "common": {
+    "statusOk": "ok",
+    "evaluationState": {
+      "notEvaluated": "Not evaluated",
+      "underEvaluation": "Under evaluation",
+      "evaluated": "Evaluated"
+    }
+  }
+}

@@ -3,21 +3,22 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import json
 import logging
 import tempfile
 import zipfile
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
 from urllib.parse import urlparse
 
 import httpx
+from azure.core.exceptions import HttpResponseError
 from azure.identity import DefaultAzureCredential
 
 try:  # pragma: no cover - optional during local dev until SDK is installed
     from azure.ai.projects import AIProjectClient
-    from azure.ai.projects.models import AgentResponse as AgentResponseType
 except ImportError:  # pragma: no cover
     AIProjectClient = None
     AgentResponseType = Any
@@ -151,26 +152,100 @@ class AzureAgentClient:
     def __init__(self) -> None:
         if AIProjectClient is None:
             raise RuntimeError("azure-ai-projects package is required for evaluation")
+        if not settings.azure_openai_endpoint:
+            raise RuntimeError("Azure AI Foundry endpoint is not configured")
+        agent_id = settings.azure_openai_agent
+        if not agent_id:
+            raise RuntimeError("Azure AI Foundry agent identifier is not configured")
+        self._agent_id = cast(str, agent_id)
         credential = DefaultAzureCredential()
         self._client = AIProjectClient(
             endpoint=settings.azure_openai_endpoint,
-            project_name=settings.azure_openai_project,
             credential=credential,
         )
 
     async def evaluate(self, payload: Dict) -> EvaluationResult:
         loop = asyncio.get_running_loop()
-        response: Any = await loop.run_in_executor(None, self._send_sync, payload)
-        content = response.content if hasattr(response, "content") else {}
-        score = content.get("score")
-        reasoning = content.get("reasoning")
-        suggestion = content.get("suggestion")
-        return EvaluationResult(score=score, reasoning=reasoning, suggestion=suggestion)
+        return await loop.run_in_executor(None, self._evaluate_sync, payload)
 
-    def _send_sync(self, payload: Dict) -> Any:
-        return self._client.agents.invoke_agent(
-            agent_name=settings.azure_openai_agent,
-            input=payload,
+    def _evaluate_sync(self, payload: Dict) -> EvaluationResult:
+        try:
+            run = self._client.agents.create_thread_and_process_run(
+                agent_id=self._agent_id,
+                thread=cast(
+                    Any,
+                    {
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": json.dumps(payload, ensure_ascii=True),
+                                    }
+                                ],
+                            }
+                        ]
+                    },
+                ),
+            )
+        except HttpResponseError as exc:  # pragma: no cover - network issues
+            raise RuntimeError("Failed to invoke Azure AI Foundry agent") from exc
+
+        assistant_text = self._extract_assistant_text(run)
+        return self._parse_evaluation(assistant_text)
+
+    def _extract_assistant_text(self, run: Any) -> str:
+        try:
+            list_messages = getattr(self._client.agents, "list_messages")
+            messages = list_messages(
+                thread_id=run.thread_id,
+                run_id=run.id,
+                order="desc",
+            )
+        except HttpResponseError as exc:  # pragma: no cover - network issues
+            raise RuntimeError("Failed to read agent messages") from exc
+
+        for message in messages:
+            # ThreadMessage implements MutableMapping so we can safely convert.
+            message_dict = message.as_dict()
+            if message_dict.get("role") != "assistant":
+                continue
+            for item in message_dict.get("content", []):
+                if item.get("type") != "text":
+                    continue
+                text_payload = item.get("text")
+                if isinstance(text_payload, dict):
+                    value = text_payload.get("value") or text_payload.get("text")
+                else:
+                    value = text_payload
+                if isinstance(value, str):
+                    return value
+        raise RuntimeError("Agent response did not include assistant text content")
+
+    def _parse_evaluation(self, raw_text: str) -> EvaluationResult:
+        try:
+            parsed = json.loads(raw_text)
+        except json.JSONDecodeError:
+            _LOGGER.warning("Agent response was not valid JSON: %s", raw_text)
+            parsed = {}
+
+        score_value = parsed.get("score")
+        if isinstance(score_value, str):
+            try:
+                score_value = float(score_value)
+            except ValueError:
+                score_value = None
+        elif not isinstance(score_value, (int, float)):
+            score_value = None
+
+        reasoning = parsed.get("reasoning") if isinstance(parsed.get("reasoning"), str) else None
+        suggestion = parsed.get("suggestion") if isinstance(parsed.get("suggestion"), str) else None
+
+        return EvaluationResult(
+            score=float(score_value) if isinstance(score_value, (int, float)) else None,
+            reasoning=reasoning,
+            suggestion=suggestion,
         )
 
 

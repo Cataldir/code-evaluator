@@ -1,6 +1,7 @@
 "use client";
 
 import { Dialog, Transition } from "@headlessui/react";
+import clsx from "clsx";
 import { Fragment, ReactNode } from "react";
 import { X } from "lucide-react";
 
@@ -17,6 +18,7 @@ type Props = {
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
   isPrimaryDisabled?: boolean;
+  inert?: boolean;
 };
 
 export function Modal({
@@ -30,10 +32,18 @@ export function Modal({
   secondaryActionLabel,
   onSecondaryAction,
   isPrimaryDisabled,
+  inert = false,
 }: Props) {
+  const overlayClasses = clsx("fixed inset-0 z-40 bg-black/70", inert && "pointer-events-none");
+  const containerClasses = clsx("fixed inset-0 z-50 overflow-y-auto", inert && "pointer-events-none");
+  const panelClasses = clsx(
+    "relative z-50 w-full max-w-2xl transform overflow-hidden rounded-2xl border border-neonBlue/40 bg-night p-6 text-left align-middle shadow-glow transition-all",
+    inert && "pointer-events-none",
+  );
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+      <Dialog as="div" className="relative z-50" onClose={inert ? () => {} : onClose}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-200"
@@ -43,10 +53,10 @@ export function Modal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/70" />
+          <Dialog.Overlay className={overlayClasses} />
         </Transition.Child>
 
-        <div className="fixed inset-0 overflow-y-auto">
+        <div className={containerClasses}>
           <div className="flex min-h-full items-center justify-center p-4 text-center">
             <Transition.Child
               as={Fragment}
@@ -57,7 +67,7 @@ export function Modal({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl border border-neonBlue/40 bg-night p-6 text-left align-middle shadow-glow transition-all">
+              <Dialog.Panel className={panelClasses} aria-hidden={inert}>
                 <div className="flex items-start justify-between">
                   <div>
                     <Dialog.Title className="text-lg font-semibold text-neonBlue">{title}</Dialog.Title>
@@ -67,7 +77,7 @@ export function Modal({
                       </Dialog.Description>
                     ) : null}
                   </div>
-                  <button onClick={onClose} className="text-neonBlue hover:text-neonPink">
+                  <button type="button" onClick={onClose} className="text-neonBlue hover:text-neonPink">
                     <X className="h-5 w-5" />
                   </button>
                 </div>

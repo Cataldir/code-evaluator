@@ -25,6 +25,7 @@ def _serialize_challenge(doc: dict, criteria: List[dict]) -> ChallengeResponse:
         name=doc["name"],
         description=doc["description"],
         expected_outcome=doc["expected_outcome"],
+        active=doc.get("active", True),
         created_at=datetime.fromisoformat(doc["created_at"]),
         criteria=[
             CriteriaResponse(
@@ -61,6 +62,7 @@ def create_challenge(
         "name": payload.name,
         "description": payload.description,
         "expected_outcome": payload.expected_outcome,
+        "active": payload.active,
         "created_at": datetime.utcnow().isoformat(),
     }
     db.create_challenge(doc)

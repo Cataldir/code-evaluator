@@ -1,15 +1,24 @@
 "use client";
 
 import clsx from "clsx";
+import { useMemo } from "react";
+
+import { useI18n } from "@/i18n/I18nProvider";
 import { EvaluationState } from "@/types/evaluation";
 
-const LABELS: Record<EvaluationState, string> = {
-  not_evaluated: "Not evaluated",
-  under_evaluation: "Under evaluation",
-  evaluated: "Evaluated",
+const LABEL_KEYS: Record<EvaluationState, { key: string; fallback: string }> = {
+  not_evaluated: { key: "common.evaluationState.notEvaluated", fallback: "Not evaluated" },
+  under_evaluation: { key: "common.evaluationState.underEvaluation", fallback: "Under evaluation" },
+  evaluated: { key: "common.evaluationState.evaluated", fallback: "Evaluated" },
 };
 
 export function StatusBadge({ state }: { state: EvaluationState }) {
+  const { t } = useI18n();
+  const label = useMemo(() => {
+    const { key, fallback } = LABEL_KEYS[state];
+    return t(key, { fallback });
+  }, [state, t]);
+
   return (
     <span
       className={clsx(
@@ -19,7 +28,7 @@ export function StatusBadge({ state }: { state: EvaluationState }) {
         state === "not_evaluated" && "bg-neonPurple/20 text-neonPurple",
       )}
     >
-      {LABELS[state]}
+      {label}
     </span>
   );
 }

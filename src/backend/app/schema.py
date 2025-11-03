@@ -40,6 +40,7 @@ class ChallengeBase(BaseModel):
     name: str
     description: str
     expected_outcome: str
+    active: bool = True
 
 
 class ChallengeCreate(ChallengeBase):
@@ -50,6 +51,7 @@ class ChallengeUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     expected_outcome: Optional[str] = None
+    active: Optional[bool] = None
 
 
 class ChallengeResponse(ChallengeBase):

@@ -7,12 +7,14 @@ import { Button } from "@/components/atoms/Button";
 import { Select } from "@/components/atoms/Select";
 import type { Challenge } from "@/types/challenge";
 import { api } from "@/utils/api";
+import { useI18n } from "@/i18n/I18nProvider";
 
 export default function HomePage() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     const fetchChallenges = async () => {
@@ -24,14 +26,14 @@ export default function HomePage() {
         }
       } catch (err) {
         console.error(err);
-        setError("Unable to load challenges. Please try again later.");
+        setError(t("home.error"));
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchChallenges();
-  }, [selectedId]);
+  }, [selectedId, t]);
 
   const selectedChallenge = useMemo(
     () => challenges.find((challenge) => challenge.id === selectedId) ?? null,
@@ -43,25 +45,22 @@ export default function HomePage() {
       <section className="space-y-6">
         <h1 className="flex items-center gap-3 text-4xl font-bold text-neonBlue md:text-5xl">
           <Sparkles className="h-10 w-10 text-neonPink" />
-          FIAP Next Challenge
+          {t("home.headline")}
         </h1>
-        <p className="max-w-3xl text-lg text-neonPink/80">
-          Welcome to the live code quality arena. Configure your challenge criteria, onboard GitHub repositories,
-          and watch the ranking update as evaluations roll in. Choose a challenge below to explore its rules.
-        </p>
+        <p className="max-w-3xl text-lg text-neonPink/80">{t("home.tagline")}</p>
         <div className="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-neonBlue">Select a challenge</label>
+            <label className="text-sm font-medium text-neonBlue">{t("home.selectLabel")}</label>
             <Select
               options={challenges.map((challenge) => ({ label: challenge.name, value: challenge.id }))}
               value={selectedId}
-              placeholder={challenges.length ? "Pick a challenge" : "No challenges found"}
+              placeholder={challenges.length ? t("home.selectPlaceholder") : t("home.emptyPlaceholder")}
               onChange={setSelectedId}
             />
           </div>
           <div className="rounded-2xl border border-neonBlue/40 bg-night/80 p-6 shadow-glow">
             {isLoading ? (
-              <p className="text-neonPink/70">Loading rules...</p>
+              <p className="text-neonPink/70">{t("home.loading")}</p>
             ) : error ? (
               <p className="text-neonRed">{error}</p>
             ) : selectedChallenge ? (
@@ -71,18 +70,22 @@ export default function HomePage() {
                   <p className="mt-1 text-sm text-neonPink/70">{selectedChallenge.description}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-widest text-neonBlue">Expected Outcome</h3>
+                  <h3 className="text-sm font-semibold uppercase tracking-widest text-neonBlue">
+                    {t("home.expectedOutcome")}
+                  </h3>
                   <p className="mt-1 text-sm text-neonPink/80">{selectedChallenge.expected_outcome}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-widest text-neonBlue">Evaluation Criteria</h3>
+                  <h3 className="text-sm font-semibold uppercase tracking-widest text-neonBlue">
+                    {t("home.evaluationCriteria")}
+                  </h3>
                   <ul className="mt-3 grid gap-3 text-sm">
                     {selectedChallenge.criteria.map((criterion) => (
                       <li key={criterion.id} className="rounded-xl border border-neonBlue/25 bg-night/60 p-4">
                         <p className="font-semibold text-neonPink">{criterion.name}</p>
                         <p className="text-xs text-neonPink/65">{criterion.description}</p>
                         <p className="mt-2 text-xs text-neonBlue/70">
-                          Score multiplier: <span className="font-semibold">{criterion.score_multiplier}</span> · Concept: {" "}
+                          {t("home.score")}: <span className="font-semibold">{criterion.score_multiplier}</span> · {t("home.concept")}: {" "}
                           <span className="font-semibold">{criterion.code_concept}</span>
                         </p>
                       </li>
@@ -92,9 +95,9 @@ export default function HomePage() {
               </div>
             ) : (
               <div className="space-y-3 text-neonPink/70">
-                <p>No challenge selected yet.</p>
+                <p>{t("home.noChallenge")}</p>
                 <Button variant="secondary" onClick={() => setSelectedId(challenges[0]?.id ?? "")}>
-                  Pick first available challenge
+                  {t("home.pickFirst")}
                 </Button>
               </div>
             )}

@@ -1,0 +1,127 @@
+{
+  "app": {
+    "brand": {
+      "subtitle": "Desafio FIAP Next",
+      "title": "Avaliador de Código"
+    },
+    "liveInsights": {
+      "title": "Insights em tempo real",
+      "description": "Configure regras dos desafios, cadastre repositórios e monitore as avaliações em tempo real neste painel."
+    },
+    "metadata": {
+      "title": "FIAP Next Challenge | Avaliador de Código",
+      "description": "Ranking de qualidade de código em tempo real para o FIAP Next Challenge"
+    },
+    "languageLabel": "Idioma",
+    "languages": {
+      "en": "Inglês",
+      "pt": "Português"
+    }
+  },
+  "nav": {
+    "overview": "Visão geral",
+    "configuration": "Configuração",
+    "rank": "Ranking"
+  },
+  "home": {
+    "headline": "FIAP Next Challenge",
+    "tagline": "Bem-vindo à arena de qualidade de código. Configure critérios, conecte repositórios do GitHub e acompanhe o ranking conforme as avaliações acontecem.",
+    "selectLabel": "Selecione um desafio",
+    "selectPlaceholder": "Escolha um desafio",
+    "emptyPlaceholder": "Nenhum desafio encontrado",
+    "loading": "Carregando regras...",
+    "error": "Não foi possível carregar os desafios. Tente novamente mais tarde.",
+    "expectedOutcome": "Resultado esperado",
+    "evaluationCriteria": "Critérios de avaliação",
+    "noChallenge": "Nenhum desafio selecionado ainda.",
+    "pickFirst": "Selecionar primeiro desafio disponível",
+    "score": "Multiplicador",
+    "concept": "Conceito"
+  },
+  "configuration": {
+    "headerTitle": "Configure o seu desafio",
+    "headerSubtitle": "Crie definições, adicione critérios de avaliação e conecte repositórios para o placar ao vivo.",
+    "createButton": "Criar desafio",
+    "modal": {
+      "title": "Criar novo desafio",
+      "description": "Defina a base do desafio e liste os critérios que cada repositório deve cumprir.",
+      "namePlaceholder": "Nome do desafio",
+      "objectivePlaceholder": "Descreva o objetivo principal",
+      "outcomePlaceholder": "Explique o resultado esperado",
+      "criteriaSection": "Critérios de avaliação",
+      "addCriterion": "Adicionar critério",
+      "emptyCriteria": "Nenhum critério ainda. Adicione um para começar.",
+      "editTitle": "Editar critério de avaliação",
+      "addTitle": "Adicionar critério de avaliação",
+      "save": "Salvar",
+      "add": "Adicionar",
+      "delete": "Excluir critério",
+      "criterion": {
+        "name": "Nome do critério",
+        "description": "O que deve ser avaliado?",
+        "score": "Multiplicador de pontuação",
+        "concept": "Conceito de código",
+        "noDescription": "Sem descrição",
+        "multiplierLabel": "Multiplicador",
+        "conceptLabel": "Conceito",
+        "notSet": "Não definido"
+      }
+    },
+    "listEmpty": "Nenhum desafio ainda. Crie um para começar.",
+    "addCriteriaModal": {
+      "title": "Adicionar critérios a {{name}}",
+      "descriptionPlaceholder": "Descreva o que representa sucesso para este critério",
+      "fallbackName": "desafio"
+    }
+  },
+  "challengeCard": {
+    "expectedResult": "Resultado esperado",
+    "viewRepos": "Ver repositórios",
+    "criteria": "Critérios",
+    "addCriteria": "Adicionar critério",
+    "multiplier": "Multiplicador",
+    "concept": "Conceito",
+    "status": {
+      "active": "Ativo",
+      "inactive": "Inativo"
+    },
+    "toggleLabel": "Alternar estado ativo do desafio",
+    "activate": "Ativar",
+    "deactivate": "Desativar"
+  },
+  "rank": {
+    "title": "Ranking em tempo real",
+    "description": "Mantenha esta página aberta para acompanhar os repositórios subindo no placar conforme as avaliações acontecem.",
+    "challengeLabel": "Desafio",
+    "selectPlaceholder": "Selecione um desafio",
+    "selectEmpty": "Nenhum desafio",
+    "table": {
+      "repository": "Repositório",
+      "score": "Pontuação",
+      "status": "Status",
+      "link": "Link",
+      "view": "Ver no GitHub",
+      "empty": "Nenhum repositório avaliado ainda.",
+      "unscored": "Sem pontuação"
+    },
+    "modal": {
+      "title": "Detalhes da avaliação",
+      "close": "Fechar",
+      "loading": "Carregando detalhes da avaliação...",
+      "score": "Pontuação",
+      "noReasoning": "Nenhuma justificativa fornecida.",
+      "suggestion": "Sugestão",
+      "noSuggestion": "Nenhuma sugestão registrada.",
+      "updated": "Atualizado",
+      "noEvaluations": "Este repositório ainda não foi avaliado ou os resultados estão pendentes."
+    }
+  },
+  "common": {
+    "statusOk": "ok",
+    "evaluationState": {
+      "notEvaluated": "Não avaliado",
+      "underEvaluation": "Em avaliação",
+      "evaluated": "Avaliado"
+    }
+  }
+}

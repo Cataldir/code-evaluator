@@ -3,12 +3,24 @@ import axios from "axios";
 import type { Challenge, Criteria } from "@/types/challenge";
 import type { EvaluationDetail, EvaluationStatus, RankResponse } from "@/types/evaluation";
 import type { Repository } from "@/types/repository";
+import { LOCALE_STORAGE_KEY } from "@/i18n/settings";
 
 const client = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000",
   headers: {
     "Content-Type": "application/json",
   },
+});
+
+client.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const locale = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+    if (locale) {
+      config.headers = config.headers ?? {};
+      config.headers["Accept-Language"] = locale;
+    }
+  }
+  return config;
 });
 
 export const api = {
@@ -22,8 +34,22 @@ export const api = {
     description: string;
     expected_outcome: string;
     criteria: Array<Omit<Criteria, "id" | "challenge_id">>;
+    active: boolean;
   }): Promise<Challenge> {
     const { data } = await client.post<Challenge>("/challenges", payload);
+    return data;
+  },
+
+  async updateChallenge(
+    challengeId: string,
+    payload: Partial<{
+      name: string;
+      description: string;
+      expected_outcome: string;
+      active: boolean;
+    }>,
+  ): Promise<Challenge> {
+    const { data } = await client.patch<Challenge>(`/challenges/${challengeId}`, payload);
     return data;
   },
 

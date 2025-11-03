@@ -42,6 +42,7 @@ class CosmosDBClient:
 
     def create_challenge(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         payload.setdefault("created_at", datetime.utcnow().isoformat())
+        payload.setdefault("active", True)
         return self.upsert(self._challenges, payload)
 
     def list_challenges(self) -> List[Dict[str, Any]]:
@@ -53,20 +54,27 @@ class CosmosDBClient:
     def delete_challenge(self, challenge_id: str) -> None:
         self._challenges.delete_item(item=challenge_id, partition_key=challenge_id)
 
+    def set_challenge_active(self, challenge_id: str, active: bool) -> Dict[str, Any]:
+        challenge = self.get_challenge(challenge_id)
+        if not challenge:
+            raise ValueError(f"Challenge {challenge_id} not found")
+        challenge["active"] = active
+        return self.upsert(self._challenges, challenge)
+
     def create_criteria(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         payload.setdefault("created_at", datetime.utcnow().isoformat())
         return self.upsert(self._criteria, payload)
 
     def list_criteria(self, challenge_id: str) -> List[Dict[str, Any]]:
         query = "SELECT * FROM c WHERE c.challenge_id = @challenge_id"
-        params = [{"name": "@challenge_id", "value": challenge_id}]
+        params: List[Dict[str, Any]] = [{"name": "@challenge_id", "value": challenge_id}]
         return list(self._criteria.query_items(query=query, parameters=params, enable_cross_partition_query=True))
 
     def get_criteria(self, criteria_id: str, challenge_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         if challenge_id:
             return self._safe_read(self._criteria, criteria_id, partition_key=challenge_id)
         query = "SELECT * FROM c WHERE c.id = @criteria_id"
-        params = [{"name": "@criteria_id", "value": criteria_id}]
+        params: List[Dict[str, Any]] = [{"name": "@criteria_id", "value": criteria_id}]
         results = list(
             self._criteria.query_items(query=query, parameters=params, enable_cross_partition_query=True)
         )
@@ -78,7 +86,7 @@ class CosmosDBClient:
 
     def list_repositories(self, challenge_id: str) -> List[Dict[str, Any]]:
         query = "SELECT * FROM c WHERE c.challenge_id = @challenge_id"
-        params = [{"name": "@challenge_id", "value": challenge_id}]
+        params: List[Dict[str, Any]] = [{"name": "@challenge_id", "value": challenge_id}]
         return list(self._repositories.query_items(query=query, parameters=params, enable_cross_partition_query=True))
 
     def get_repository(self, repository_id: str, challenge_id: str) -> Optional[Dict[str, Any]]:
@@ -93,12 +101,12 @@ class CosmosDBClient:
 
     def list_evaluations_for_repository(self, repository_id: str) -> List[Dict[str, Any]]:
         query = "SELECT * FROM c WHERE c.repository_id = @repository_id"
-        params = [{"name": "@repository_id", "value": repository_id}]
+        params: List[Dict[str, Any]] = [{"name": "@repository_id", "value": repository_id}]
         return list(self._evaluations.query_items(query=query, parameters=params, enable_cross_partition_query=True))
 
     def list_evaluations_for_challenge(self, challenge_id: str) -> List[Dict[str, Any]]:
         query = "SELECT * FROM c WHERE c.challenge_id = @challenge_id"
-        params = [{"name": "@challenge_id", "value": challenge_id}]
+        params: List[Dict[str, Any]] = [{"name": "@challenge_id", "value": challenge_id}]
         return list(self._evaluations.query_items(query=query, parameters=params, enable_cross_partition_query=True))
 
     def patch_evaluation(self, evaluation_id: str, repository_id: str, data: Dict[str, Any]) -> Dict[str, Any]:

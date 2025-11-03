@@ -5,14 +5,18 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { Flame, Home, Settings, Trophy } from "lucide-react";
 
-const NAV_ITEMS = [
-  { label: "Overview", href: "/", icon: Home },
-  { label: "Configuration", href: "/configuration", icon: Settings },
-  { label: "Rank", href: "/rank", icon: Trophy },
-];
+import { LanguageSwitcher } from "@/components/molecules/LanguageSwitcher";
+import { useI18n } from "@/i18n/I18nProvider";
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { t } = useI18n();
+
+  const navItems = [
+    { label: t("nav.overview"), href: "/", icon: Home },
+    { label: t("nav.configuration"), href: "/configuration", icon: Settings },
+    { label: t("nav.rank"), href: "/rank", icon: Trophy },
+  ];
 
   return (
     <aside className="flex h-full w-full flex-col gap-8 bg-night px-6 py-10 text-neonBlue">
@@ -21,13 +25,13 @@ export function SidebarNav() {
           <Flame className="h-6 w-6 text-neonPink" />
         </span>
         <div>
-          <p className="text-xs uppercase tracking-widest text-neonPink/70">FIAP Next Challenge</p>
-          <h1 className="text-lg font-semibold text-neonBlue">Code Evaluator</h1>
+          <p className="text-xs uppercase tracking-widest text-neonPink/70">{t("app.brand.subtitle")}</p>
+          <h1 className="text-lg font-semibold text-neonBlue">{t("app.brand.title")}</h1>
         </div>
       </div>
 
       <nav className="flex flex-1 flex-col gap-2">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
           return (
@@ -49,11 +53,11 @@ export function SidebarNav() {
       </nav>
 
       <div className="rounded-xl border border-neonBlue/20 bg-night/80 p-4 text-xs text-neonPink/70">
-        <p className="font-semibold text-neonBlue">Live insights</p>
-        <p className="mt-1">
-          Configure challenge rules, onboard repositories, and monitor evaluations in real time—all from this panel.
-        </p>
+        <p className="font-semibold text-neonBlue">{t("app.liveInsights.title")}</p>
+        <p className="mt-1">{t("app.liveInsights.description")}</p>
       </div>
+
+      <LanguageSwitcher />
     </aside>
   );
 }

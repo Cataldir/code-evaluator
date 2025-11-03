@@ -1,0 +1,43 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend: FastAPI (uvicorn)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "app.main:app",
+        "--port",
+        "8000",
+        "--reload"
+      ],
+      "cwd": "${workspaceFolder}/src/backend",
+      "envFile": "${workspaceFolder}/src/backend/.env",
+      "justMyCode": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Frontend: Next.js dev server",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/src/frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "envFile": "${workspaceFolder}/src/frontend/.env.local",
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack: backend + frontend",
+      "configurations": [
+        "Backend: FastAPI (uvicorn)",
+        "Frontend: Next.js dev server"
+      ]
+    }
+  ]
+}

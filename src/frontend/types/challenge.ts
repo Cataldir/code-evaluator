@@ -16,6 +16,7 @@ export type Challenge = {
   expected_outcome: string;
   created_at: string;
   criteria: Criteria[];
+  active: boolean;
 };
 
 export type ChallengeForm = {
@@ -23,6 +24,7 @@ export type ChallengeForm = {
   description: string;
   expected_outcome: string;
   criteria: Array<Omit<Criteria, "id" | "challenge_id">>;
+  active: boolean;
 };
 
 export type EvaluationTriggerPayload = {

@@ -6,6 +6,7 @@ Full-stack platform for orchestrating code-quality evaluations across GitHub rep
 
 - `src/backend/`: FastAPI backend integrated with Azure Cosmos DB and Azure AI Foundry agents.
 - `src/frontend/`: Next.js 14 UI (App Router) with Tailwind CSS and an atomic component structure.
+- `infra/`: Bicep templates for provisioning the Azure infrastructure footprint.
 
 ## Backend (FastAPI + uv)
 
@@ -51,3 +52,27 @@ npm run dev
 - Challenge management with dynamic evaluation criteria and repository mapping.
 - Live ranking dashboard polling the backend for evaluation progress.
 - Azure AI agent integration using repository snapshots (download + unzip) during evaluations.
+
+## Infrastructure as Code (Bicep)
+
+The `infra/` folder contains composable Bicep modules plus an orchestrating `main.bicep` template that provisions the Azure resources shown in the reference architecture:
+
+- Linux App Service plan and App Service for the FastAPI backend (system + user-assigned managed identity).
+- Azure Static Web App for the Next.js frontend (GitHub repository integration via parameters).
+- Azure Cosmos DB account with an optional secondary region (failover priority configurable).
+- Azure AI Foundry account + project for working with evaluation agents.
+- Azure Container Registry for artefacts and build images.
+- User-assigned managed identity shared across services.
+
+### Deploy
+
+```powershell
+cd infra
+az deployment group create `
+  --resource-group <resource-group-name> `
+  --template-file main.bicep `
+  --parameters @main.bicepparam `
+  --parameters staticWebAppRepositoryToken=<GitHub_PAT_or_federated_token>
+```
+
+Update `main.bicepparam` (and override parameters at deploy time as needed) before running the deployment. Avoid committing real secrets—the sample parameter file ships with placeholders only.

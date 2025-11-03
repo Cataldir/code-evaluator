@@ -27,6 +27,7 @@ class Settings:
     azure_openai_agent: Optional[str]
     azure_openai_endpoint: Optional[str]
     github_token: Optional[str]
+    evaluation_interval_seconds: int
 
     def __init__(self) -> None:
         self.cosmos_endpoint = _require("COSMOS_ENDPOINT")
@@ -39,6 +40,7 @@ class Settings:
         self.azure_openai_agent = os.getenv("AZURE_AI_AGENT_NAME")
         self.azure_openai_endpoint = os.getenv("AZURE_AI_ENDPOINT")
         self.github_token = os.getenv("GITHUB_TOKEN")
+        self.evaluation_interval_seconds = int(os.getenv("EVALUATION_INTERVAL_SECONDS", "1800"))
         _LOGGER.info("Settings loaded (endpoint=%s, database=%s)", self.cosmos_endpoint, self.cosmos_database)
 
 
