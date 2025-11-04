@@ -19,6 +19,7 @@ class CosmosDBClient:
 
     def __init__(self) -> None:
         credential = DefaultAzureCredential()
+        _LOGGER.info("Initializing Cosmos client using DefaultAzureCredential")
         self._client = CosmosClient(url=settings.cosmos_endpoint, credential=credential)
         self._database = self._client.create_database_if_not_exists(id=settings.cosmos_database)
         self._challenges = self._get_container(settings.cosmos_challenges_container, "/id")
