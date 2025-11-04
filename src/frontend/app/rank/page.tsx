@@ -81,6 +81,13 @@ export default function RankPage() {
     }
     setSelectedRepositoryId(repositoryId);
     setIsModalOpen(true);
+    setEvaluationDetails([]);
+    const entry = rankEntries.find((item) => item.repository_id === repositoryId);
+    if (entry && entry.evaluations.length) {
+      setEvaluationDetails(entry.evaluations);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const evaluations = await api.getEvaluationHistory(selectedChallengeId, repositoryId);

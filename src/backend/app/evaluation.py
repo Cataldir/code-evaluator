@@ -40,6 +40,7 @@ CODE_EVALUATION_SYSTEM_PROMPT = (
     "Output format (JSON only, no prose): {\"score\": <float 0-100>, \"reasoning\": <concise explanation>, "
     "\"suggestion\": <actionable recommendation>. If information is insufficient, return score 0 with "
     "an explanation describing what is missing."
+    "Your evaluation should be written in Portuguese-BR"
 )
 
 
@@ -360,7 +361,7 @@ def summarize_repository(root: Path, limit: int = 50) -> List[Dict[str, str]]:
         content = path.read_text(encoding="utf-8", errors="ignore")
         files.append({
             "path": str(path.relative_to(root)),
-            "snippet": content[:2000],
+            "snippet": content[:5000],
         })
     return files
 

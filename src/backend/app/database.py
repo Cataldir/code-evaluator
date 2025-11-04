@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
 
 from azure.cosmos import CosmosClient, PartitionKey
 from azure.identity import DefaultAzureCredential
@@ -99,15 +99,13 @@ class CosmosDBClient:
     def delete_repository(self, repository_id: str, challenge_id: str) -> None:
         self._repositories.delete_item(item=repository_id, partition_key=challenge_id)
 
-    def list_evaluations_for_repository(self, repository_id: str) -> List[Dict[str, Any]]:
-        query = "SELECT * FROM c WHERE c.repository_id = @repository_id"
-        params: List[Dict[str, Any]] = [{"name": "@repository_id", "value": repository_id}]
-        return list(self._evaluations.query_items(query=query, parameters=params, enable_cross_partition_query=True))
-
     def list_evaluations_for_challenge(self, challenge_id: str) -> List[Dict[str, Any]]:
         query = "SELECT * FROM c WHERE c.challenge_id = @challenge_id"
         params: List[Dict[str, Any]] = [{"name": "@challenge_id", "value": challenge_id}]
         return list(self._evaluations.query_items(query=query, parameters=params, enable_cross_partition_query=True))
+
+    def get_evaluation(self, evaluation_id: str, repository_id: str) -> Optional[Dict[str, Any]]:
+        return self._safe_read(self._evaluations, evaluation_id, partition_key=repository_id)
 
     def patch_evaluation(self, evaluation_id: str, repository_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
         existing = self._safe_read(self._evaluations, evaluation_id, partition_key=repository_id)

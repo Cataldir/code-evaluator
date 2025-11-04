@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import datetime
 from typing import Dict, List
 
@@ -21,6 +22,8 @@ from ..schema import (
 )
 
 router = APIRouter(prefix="/evaluations", tags=["evaluations"])
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @router.post("/trigger", status_code=status.HTTP_202_ACCEPTED)
@@ -83,6 +86,11 @@ def rank(challenge_id: str, db: CosmosDBClient = Depends(get_db_client)) -> Rank
         total_score = sum(scored_values) / len(scored_values) if scored_values else None
         state = _resolve_state(repo_evaluations)
         unscored = len(scored_values) < len(repo_evaluations) or not scored_values
+        ordered_details = sorted(
+            repo_evaluations,
+            key=lambda item: item.get("updated_at") or item.get("created_at") or "",
+            reverse=True,
+        )
         entries.append(
             RankEntry(
                 repository_id=repo["id"],
@@ -91,6 +99,21 @@ def rank(challenge_id: str, db: CosmosDBClient = Depends(get_db_client)) -> Rank
                 total_score=total_score,
                 status=state,
                 unscored=unscored,
+                evaluations=[
+                    EvaluationDetail(
+                        id=item["id"],
+                        challenge_id=item["challenge_id"],
+                        repository_id=item["repository_id"],
+                        criteria_id=item["criteria_id"],
+                        criteria_name=item.get("criteria_name", ""),
+                        score=item.get("score"),
+                        state=EvaluationState(item.get("state", EvaluationState.NOT_EVALUATED.value)),
+                        reasoning=item.get("reasoning"),
+                        suggestion=item.get("suggestion"),
+                        updated_at=_coerce_datetime(item.get("updated_at"), item.get("created_at")),
+                    )
+                    for item in ordered_details
+                ],
             )
         )
     entries.sort(key=lambda item: (item.total_score is None, -(item.total_score or 0)))
@@ -106,7 +129,23 @@ def get_repository_history(
     repo_doc = db.get_repository(repository_id, challenge_id)
     if not repo_doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Repository not found")
-    evaluations = db.list_evaluations_for_repository(repository_id)
+    evaluations = [
+        item
+        for item in db.list_evaluations_for_challenge(challenge_id)
+        if item.get("repository_id") == repository_id
+    ]
+    evaluations.sort(
+        key=lambda item: item.get("updated_at") or item.get("created_at") or "",
+        reverse=True,
+    )
+    _LOGGER.debug(
+        "Repository history lookup",  # friendly crumb for debugging
+        extra={
+            "challenge_id": challenge_id,
+            "repository_id": repository_id,
+            "evaluation_count": len(evaluations),
+        },
+    )
     return EvaluationHistoryResponse(
         repository=RepositoryResponse(
             id=repo_doc["id"],
@@ -130,6 +169,44 @@ def get_repository_history(
             )
             for item in evaluations
         ],
+    )
+
+
+@router.get(
+    "/repository/{challenge_id}/{repository_id}/{evaluation_id}",
+    response_model=EvaluationDetail,
+)
+def get_evaluation_detail(
+    challenge_id: str,
+    repository_id: str,
+    evaluation_id: str,
+    db: CosmosDBClient = Depends(get_db_client),
+) -> EvaluationDetail:
+    repo_doc = db.get_repository(repository_id, challenge_id)
+    if not repo_doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Repository not found")
+    evaluation = db.get_evaluation(evaluation_id, repository_id)
+    if not evaluation or evaluation.get("challenge_id") != challenge_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluation not found")
+    _LOGGER.debug(
+        "Evaluation detail lookup",
+        extra={
+            "challenge_id": challenge_id,
+            "repository_id": repository_id,
+            "evaluation_id": evaluation_id,
+        },
+    )
+    return EvaluationDetail(
+        id=evaluation["id"],
+        challenge_id=evaluation["challenge_id"],
+        repository_id=evaluation["repository_id"],
+        criteria_id=evaluation["criteria_id"],
+        criteria_name=evaluation.get("criteria_name", ""),
+        score=evaluation.get("score"),
+        state=EvaluationState(evaluation.get("state", EvaluationState.NOT_EVALUATED.value)),
+        reasoning=evaluation.get("reasoning"),
+        suggestion=evaluation.get("suggestion"),
+        updated_at=_coerce_datetime(evaluation.get("updated_at"), evaluation.get("created_at")),
     )
 
 

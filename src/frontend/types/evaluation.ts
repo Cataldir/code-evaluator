@@ -20,6 +20,7 @@ export type RankEntry = {
   total_score: number | null;
   status: EvaluationState;
   unscored: boolean;
+  evaluations: EvaluationDetail[];
 };
 
 export type RankResponse = {

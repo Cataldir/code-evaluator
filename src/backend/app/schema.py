@@ -110,6 +110,7 @@ class RankEntry(BaseModel):
     total_score: Optional[float]
     status: EvaluationState
     unscored: bool = False
+    evaluations: List["EvaluationDetail"] = Field(default_factory=list)
 
 
 class RankResponse(BaseModel):
