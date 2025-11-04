@@ -95,6 +95,11 @@
     "challengeLabel": "Challenge",
     "selectPlaceholder": "Select a challenge",
     "selectEmpty": "No challenges",
+    "trigger": {
+      "button": "Start evaluation run",
+      "success": "Evaluation started. Results will update automatically as they complete.",
+      "error": "We couldn't start the evaluation. Please try again."
+    },
     "table": {
       "repository": "Repository",
       "score": "Score",

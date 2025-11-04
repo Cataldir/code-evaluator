@@ -14,7 +14,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
 from urllib.parse import urlparse
 
 import httpx
-from azure.core.exceptions import HttpResponseError
+from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 
 try:  # pragma: no cover - optional during local dev until SDK is installed
@@ -28,6 +28,19 @@ from .database import CosmosDBClient, get_db_client
 from .schema import EvaluationState
 
 _LOGGER = logging.getLogger(__name__)
+
+CODE_EVALUATION_SYSTEM_PROMPT = (
+    "You are an automated code quality evaluator for the FIAP Next Challenge.\n"
+    "Input: JSON with fields `criteria` and `repository`. The criteria object includes name, description, "
+    "score_multiplier, and code_concept. The repository object contains name, url, and a list of files, "
+    "where each file has a path and a code snippet.\n"
+    "Task: Review the supplied snippets, infer repository structure, and judge how well the repository "
+    "meets the intent of the criteria description and code_concept. Consider score_multiplier when "
+    "deciding importance, but the final score must stay between 0 and 100.\n"
+    "Output format (JSON only, no prose): {\"score\": <float 0-100>, \"reasoning\": <concise explanation>, "
+    "\"suggestion\": <actionable recommendation>. If information is insufficient, return score 0 with "
+    "an explanation describing what is missing."
+)
 
 
 @dataclass
@@ -101,11 +114,16 @@ class EvaluationOrchestrator:
             "state": new_state.value,
             "updated_at": datetime.utcnow().isoformat(),
         }
-        self.db_client.patch_evaluation(
-            evaluation_id=self.evaluation_doc["id"],
-            repository_id=self.evaluation_doc["repository_id"],
-            data=patch,
-        )
+        try:
+            persisted = self.db_client.patch_evaluation(
+                evaluation_id=self.evaluation_doc["id"],
+                repository_id=self.evaluation_doc["repository_id"],
+                data=patch,
+            )
+        except ValueError:
+            fallback = {**self.evaluation_doc, **patch}
+            persisted = self.db_client.create_evaluation(fallback)
+        self.evaluation_doc.update(persisted)
 
     async def evaluate_repository(self) -> EvaluationResult:
         tmp_dir = tempfile.TemporaryDirectory()
@@ -139,30 +157,49 @@ class EvaluationOrchestrator:
             "suggestion": result.suggestion,
             "updated_at": datetime.utcnow().isoformat(),
         }
-        self.db_client.patch_evaluation(
-            evaluation_id=self.evaluation_doc["id"],
-            repository_id=self.evaluation_doc["repository_id"],
-            data=patch,
-        )
+        try:
+            persisted = self.db_client.patch_evaluation(
+                evaluation_id=self.evaluation_doc["id"],
+                repository_id=self.evaluation_doc["repository_id"],
+                data=patch,
+            )
+        except ValueError:
+            fallback = {**self.evaluation_doc, **patch}
+            persisted = self.db_client.create_evaluation(fallback)
+        self.evaluation_doc.update(persisted)
 
 
 class AzureAgentClient:
     """Wrapper around the Azure AI Foundry Agent SDK."""
 
-    def __init__(self) -> None:
+    def __init__(self, agent_name: str, agent_id: Optional[str] = None) -> None:
         if AIProjectClient is None:
             raise RuntimeError("azure-ai-projects package is required for evaluation")
         if not settings.azure_openai_endpoint:
             raise RuntimeError("Azure AI Foundry endpoint is not configured")
-        agent_id = settings.azure_openai_agent
-        if not agent_id:
-            raise RuntimeError("Azure AI Foundry agent identifier is not configured")
-        self._agent_id = cast(str, agent_id)
         credential = DefaultAzureCredential()
         self._client = AIProjectClient(
             endpoint=settings.azure_openai_endpoint,
             credential=credential,
         )
+        agent = None
+        if agent_id:
+            agent = self._load_agent_by_id(agent_id)
+            if agent is None:
+                _LOGGER.warning("Agent with id '%s' not found; attempting recreation", agent_id)
+        if agent is None:
+            agent = self._ensure_agent_by_name(agent_name)
+        agent_id_value = getattr(agent, "id", None)
+        if agent_id_value is None and isinstance(agent, dict):
+            agent_id_value = agent.get("id")
+        if agent_id_value is None:
+            raise RuntimeError("Azure AI Foundry agent does not expose an identifier")
+        self._agent_id = cast(str, agent_id_value)
+        self._agent_name = agent_name
+
+    @property
+    def agent_id(self) -> str:
+        return self._agent_id
 
     async def evaluate(self, payload: Dict) -> EvaluationResult:
         loop = asyncio.get_running_loop()
@@ -195,16 +232,67 @@ class AzureAgentClient:
         assistant_text = self._extract_assistant_text(run)
         return self._parse_evaluation(assistant_text)
 
-    def _extract_assistant_text(self, run: Any) -> str:
+    def _load_agent_by_id(self, agent_id: str) -> Optional[Any]:
         try:
-            list_messages = getattr(self._client.agents, "list_messages")
-            messages = list_messages(
-                thread_id=run.thread_id,
-                run_id=run.id,
-                order="desc",
+            return self._client.agents.get_agent(agent_id)
+        except HttpResponseError as exc:
+            if getattr(exc, "status_code", None) in (404, "404"):
+                return None
+            raise RuntimeError("Failed to retrieve Azure AI Foundry agent by id") from exc
+
+    def _ensure_agent_by_name(self, name: str) -> Any:
+        existing = self._find_agent_by_name(name)
+        if existing is not None:
+            return existing
+        model_name = settings.azure_openai_agent_model
+        if not model_name:
+            raise RuntimeError("Azure AI Foundry agent model is not configured")
+        try:
+            agent = self._client.agents.create_agent(
+                name=name,
+                model=model_name,
+                instructions=CODE_EVALUATION_SYSTEM_PROMPT,
             )
+            _LOGGER.info("Created Azure AI Foundry agent '%s' with model '%s'", name, model_name)
+            return agent
+        except ResourceNotFoundError as exc:
+            raise RuntimeError(
+                "Azure AI Foundry could not find the model deployment ''%s''. "
+                "Check AZURE_AI_AGENT_MODEL and ensure the deployment exists in the project." % model_name
+            ) from exc
+        except HttpResponseError as exc:
+            raise RuntimeError("Failed to create Azure AI Foundry agent") from exc
+
+    def _find_agent_by_name(self, identifier: str) -> Optional[Any]:
+        try:
+            agents = self._client.agents.list_agents()
+            for agent in agents:
+                agent_name = getattr(agent, "name", None)
+                if agent_name == identifier:
+                    return agent
+        except ResourceNotFoundError:
+            return None
+        except HttpResponseError as exc:
+            raise RuntimeError("Failed to list Azure AI Foundry agents") from exc
+        return None
+
+    def _extract_assistant_text(self, run: Any) -> str:
+        list_kwargs = {"thread_id": run.thread_id, "order": "desc"}
+        run_id = getattr(run, "id", None)
+        if run_id:
+            list_kwargs["run_id"] = run_id
+
+        try:
+            messages_client = getattr(self._client.agents, "messages", None)
+            if messages_client is not None and hasattr(messages_client, "list"):
+                messages = messages_client.list(**list_kwargs)
+            else:
+                list_messages = getattr(self._client.agents, "list_messages")
+                messages = list_messages(**list_kwargs)
         except HttpResponseError as exc:  # pragma: no cover - network issues
             raise RuntimeError("Failed to read agent messages") from exc
+        except AttributeError as exc:  # pragma: no cover - SDK mismatch
+            raise RuntimeError("Azure AI Foundry SDK does not expose a message listing API") from exc
 
         for message in messages:
             # ThreadMessage implements MutableMapping so we can safely convert.
@@ -258,7 +346,7 @@ async def download_repository_archive(repository_url: str, destination: Path, to
     }
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    async with httpx.AsyncClient(timeout=60) as client:
+    async with httpx.AsyncClient(timeout=60, follow_redirects=True) as client:
         response = await client.get(zip_url, headers=headers)
         response.raise_for_status()
     destination.write_bytes(response.content)
@@ -296,9 +384,12 @@ class EvaluationService:
 
     def __init__(self, db_client: Optional[CosmosDBClient] = None) -> None:
         self.db_client = db_client or get_db_client()
-        self.agent_client = AzureAgentClient()
 
     async def run_for_challenge(self, challenge_id: str, criteria_ids: Optional[List[str]] = None) -> None:
+        challenge = self.db_client.get_challenge(challenge_id)
+        if not challenge:
+            raise ValueError(f"Challenge {challenge_id} not found")
+        agent_client = self._ensure_challenge_agent(challenge)
         criteria = self._load_criteria(challenge_id, criteria_ids)
         repositories = self.db_client.list_repositories(challenge_id)
         for criterion in criteria:
@@ -315,9 +406,23 @@ class EvaluationService:
                     evaluation_doc=evaluation_doc,
                     repository=repo,
                     criteria=criterion,
-                    agent_client=self.agent_client,
+                    agent_client=agent_client,
                 )
                 await orchestrator.run()
+
+    def _ensure_challenge_agent(self, challenge_doc: Dict[str, Any]) -> AzureAgentClient:
+        agent_id = challenge_doc.get("agent_id")
+        agent_name = challenge_doc.get("name")
+        if not agent_name:
+            raise RuntimeError(f"Challenge '{challenge_doc.get('id')}' is missing a name for agent provisioning")
+        agent_client = AzureAgentClient(
+            agent_name=agent_name,
+            agent_id=agent_id,
+        )
+        if agent_client.agent_id != agent_id:
+            challenge_doc["agent_id"] = agent_client.agent_id
+            self.db_client.create_challenge(challenge_doc)
+        return agent_client
 
     def _ensure_evaluation_doc(self, repo: RepositoryContext, criterion: Dict) -> Dict:
         base_payload = {

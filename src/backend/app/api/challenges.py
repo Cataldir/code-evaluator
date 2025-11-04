@@ -8,6 +8,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..database import CosmosDBClient, get_db_client
+from ..evaluation import AzureAgentClient
 from ..schema import (
     ChallengeCreate,
     ChallengeResponse,
@@ -27,6 +28,7 @@ def _serialize_challenge(doc: dict, criteria: List[dict]) -> ChallengeResponse:
         expected_outcome=doc["expected_outcome"],
         active=doc.get("active", True),
         created_at=datetime.fromisoformat(doc["created_at"]),
+        agent_id=doc.get("agent_id"),
         criteria=[
             CriteriaResponse(
                 id=item["id"],
@@ -57,6 +59,10 @@ def create_challenge(
     db: CosmosDBClient = Depends(get_db_client),
 ) -> ChallengeResponse:
     challenge_id = str(uuid4())
+    try:
+        agent_client = AzureAgentClient(agent_name=payload.name)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
     doc = {
         "id": challenge_id,
         "name": payload.name,
@@ -64,6 +70,7 @@ def create_challenge(
         "expected_outcome": payload.expected_outcome,
         "active": payload.active,
         "created_at": datetime.utcnow().isoformat(),
+        "agent_id": agent_client.agent_id,
     }
     db.create_challenge(doc)
     persisted_criteria = []

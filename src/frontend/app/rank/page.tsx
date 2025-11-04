@@ -22,6 +22,9 @@ export default function RankPage() {
   const [selectedRepositoryId, setSelectedRepositoryId] = useState<string>("");
   const [evaluationDetails, setEvaluationDetails] = useState<EvaluationDetail[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isTriggering, setIsTriggering] = useState(false);
+  const [triggerMessage, setTriggerMessage] = useState<string | null>(null);
+  const [triggerError, setTriggerError] = useState<string | null>(null);
   const { t } = useI18n();
 
   useEffect(() => {
@@ -39,6 +42,24 @@ export default function RankPage() {
   () => challenges.find((challenge: Challenge) => challenge.id === selectedChallengeId) ?? null,
     [challenges, selectedChallengeId],
   );
+
+  const handleTriggerEvaluation = async () => {
+    if (!selectedChallengeId || isTriggering) {
+      return;
+    }
+    setIsTriggering(true);
+    setTriggerMessage(null);
+    setTriggerError(null);
+    try {
+      await api.triggerEvaluation({ challenge_id: selectedChallengeId });
+      setTriggerMessage(t("rank.trigger.success"));
+    } catch (error) {
+      console.error(error);
+      setTriggerError(t("rank.trigger.error"));
+    } finally {
+      setIsTriggering(false);
+    }
+  };
 
   usePolling(
     () => {
@@ -78,14 +99,30 @@ export default function RankPage() {
           <h1 className="text-4xl font-bold text-neonBlue">{t("rank.title")}</h1>
           <p className="mt-2 max-w-3xl text-sm text-neonPink/80">{t("rank.description")}</p>
         </div>
-        <div className="w-full max-w-xs space-y-2">
-          <label className="text-xs font-semibold uppercase tracking-widest text-neonBlue">{t("rank.challengeLabel")}</label>
-          <Select
-            options={challenges.map((challenge: Challenge) => ({ label: challenge.name, value: challenge.id }))}
-            value={selectedChallengeId}
-            placeholder={challenges.length ? t("rank.selectPlaceholder") : t("rank.selectEmpty")}
-            onChange={setSelectedChallengeId}
-          />
+        <div className="flex w-full max-w-xl flex-col gap-3 md:items-end">
+          <div className="w-full space-y-2 md:max-w-xs">
+            <label className="text-xs font-semibold uppercase tracking-widest text-neonBlue">{t("rank.challengeLabel")}</label>
+            <Select
+              options={challenges.map((challenge: Challenge) => ({ label: challenge.name, value: challenge.id }))}
+              value={selectedChallengeId}
+              placeholder={challenges.length ? t("rank.selectPlaceholder") : t("rank.selectEmpty")}
+              onChange={(value) => {
+                setSelectedChallengeId(value);
+                setTriggerMessage(null);
+                setTriggerError(null);
+              }}
+            />
+          </div>
+          <div className="flex w-full flex-col gap-2 md:max-w-xs">
+            <Button
+              onClick={handleTriggerEvaluation}
+              disabled={!selectedChallengeId || isTriggering}
+            >
+              {isTriggering ? `${t("rank.trigger.button")}...` : t("rank.trigger.button")}
+            </Button>
+            {triggerMessage ? <p className="text-xs text-neonBlue/70">{triggerMessage}</p> : null}
+            {triggerError ? <p className="text-xs text-neonRed">{triggerError}</p> : null}
+          </div>
         </div>
       </header>
 

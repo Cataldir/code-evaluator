@@ -95,6 +95,11 @@
     "challengeLabel": "Desafio",
     "selectPlaceholder": "Selecione um desafio",
     "selectEmpty": "Nenhum desafio",
+    "trigger": {
+      "button": "Iniciar avaliação",
+      "success": "Avaliação iniciada. Os resultados serão atualizados automaticamente assim que estiverem prontos.",
+      "error": "Não foi possível iniciar a avaliação. Tente novamente."
+    },
     "table": {
       "repository": "Repositório",
       "score": "Pontuação",

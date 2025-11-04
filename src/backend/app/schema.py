@@ -52,11 +52,13 @@ class ChallengeUpdate(BaseModel):
     description: Optional[str] = None
     expected_outcome: Optional[str] = None
     active: Optional[bool] = None
+    agent_id: Optional[str] = None
 
 
 class ChallengeResponse(ChallengeBase):
     id: str
     created_at: datetime
+    agent_id: Optional[str] = None
     criteria: List[CriteriaResponse] = Field(default_factory=list)
 
 
