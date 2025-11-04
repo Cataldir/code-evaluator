@@ -6,7 +6,7 @@ import type { Repository } from "@/types/repository";
 import { LOCALE_STORAGE_KEY } from "@/i18n/settings";
 
 const client = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000",
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://code-evaluator-project-c8efdzb3ctaxcvcz.eastus-01.azurewebsites.net/",
   headers: {
     "Content-Type": "application/json",
   },
