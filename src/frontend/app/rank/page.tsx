@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/atoms/Button";
@@ -14,6 +14,14 @@ import { usePolling } from "@/utils/hooks";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export default function RankPage() {
+  return (
+    <Suspense fallback={<div className="px-6 py-16">Loading…</div>}>
+      <RankContent />
+    </Suspense>
+  );
+}
+
+function RankContent() {
   const params = useSearchParams();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [selectedChallengeId, setSelectedChallengeId] = useState<string>("");
