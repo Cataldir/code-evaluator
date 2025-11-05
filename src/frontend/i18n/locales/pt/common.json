@@ -48,6 +48,8 @@
       "namePlaceholder": "Nome do desafio",
       "objectivePlaceholder": "Descreva o objetivo principal",
       "outcomePlaceholder": "Explique o resultado esperado",
+      "activeLabel": "Desafio ativo",
+      "activeHelper": "Defina se o desafio deve ficar habilitado imediatamente.",
       "criteriaSection": "Critérios de avaliação",
       "addCriterion": "Adicionar critério",
       "emptyCriteria": "Nenhum critério ainda. Adicione um para começar.",
@@ -55,6 +57,7 @@
       "addTitle": "Adicionar critério de avaliação",
       "save": "Salvar",
       "add": "Adicionar",
+      "editAction": "Editar critério",
       "delete": "Excluir critério",
       "criterion": {
         "name": "Nome do critério",

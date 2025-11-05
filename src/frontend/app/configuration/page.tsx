@@ -51,6 +51,7 @@ export default function ConfigurationPage() {
   const [isDraftCriteriaModalOpen, setIsDraftCriteriaModalOpen] = useState(false);
   const [draftCriteriaIndex, setDraftCriteriaIndex] = useState<number | null>(null);
   const [draftCriteriaForm, setDraftCriteriaForm] = useState<CriterionDraft>(createEmptyCriterion());
+  const [shouldResumeChallengeModal, setShouldResumeChallengeModal] = useState(false);
   const { t } = useI18n();
 
   useEffect(() => {
@@ -70,22 +71,33 @@ export default function ConfigurationPage() {
     });
   };
 
-  const openNewDraftCriterion = () => {
-    setDraftCriteriaIndex(null);
-    setDraftCriteriaForm(createEmptyCriterion());
+  const openDraftModalWithState = (nextIndex: number | null, nextForm: CriterionDraft) => {
+    setDraftCriteriaIndex(nextIndex);
+    setDraftCriteriaForm(nextForm);
+    const shouldResume = isChallengeModalOpen;
+    setShouldResumeChallengeModal(shouldResume);
+    if (shouldResume) {
+      setIsChallengeModalOpen(false);
+    }
     setIsDraftCriteriaModalOpen(true);
   };
 
+  const openNewDraftCriterion = () => {
+    openDraftModalWithState(null, createEmptyCriterion());
+  };
+
   const openDraftCriterion = (index: number) => {
-    setDraftCriteriaIndex(index);
-    setDraftCriteriaForm({ ...challengeForm.criteria[index] });
-    setIsDraftCriteriaModalOpen(true);
+    openDraftModalWithState(index, { ...challengeForm.criteria[index] });
   };
 
   const closeDraftCriteriaModal = () => {
     setIsDraftCriteriaModalOpen(false);
     setDraftCriteriaIndex(null);
     setDraftCriteriaForm(createEmptyCriterion());
+    if (shouldResumeChallengeModal) {
+      setIsChallengeModalOpen(true);
+      setShouldResumeChallengeModal(false);
+    }
   };
 
   const handleSaveDraftCriterion = () => {
@@ -123,10 +135,10 @@ export default function ConfigurationPage() {
   };
 
   const handleCloseChallengeModal = () => {
-    if (isDraftCriteriaModalOpen) {
-      return;
-    }
-    closeDraftCriteriaModal();
+    setShouldResumeChallengeModal(false);
+    setIsDraftCriteriaModalOpen(false);
+    setDraftCriteriaIndex(null);
+    setDraftCriteriaForm(createEmptyCriterion());
     setIsChallengeModalOpen(false);
     resetChallengeForm();
   };
@@ -241,7 +253,6 @@ export default function ConfigurationPage() {
         primaryActionLabel={t("configuration.createButton")}
         onPrimaryAction={handleCreateChallenge}
         isPrimaryDisabled={loading}
-        inert={isDraftCriteriaModalOpen}
       >
         <div className="space-y-4">
           <Input
@@ -275,8 +286,8 @@ export default function ConfigurationPage() {
                   setChallengeForm((prev) => ({ ...prev, active: event.target.checked }))
                 }
               />
-              <span className="flex h-6 w-11 items-center rounded-full bg-neonPink/30 transition peer-checked:bg-neonBlue/60">
-                <span className="ml-1 h-5 w-5 rounded-full bg-night transition peer-checked:translate-x-5 peer-checked:bg-neonBlue"></span>
+              <span className="flex h-6 w-11 items-center justify-start rounded-full bg-neonPink/30 px-1 transition peer-checked:bg-neonBlue/60 peer-checked:justify-end">
+                <span className="h-5 w-5 rounded-full bg-night transition peer-checked:bg-neonBlue"></span>
               </span>
             </span>
           </label>
@@ -292,15 +303,6 @@ export default function ConfigurationPage() {
                 {challengeForm.criteria.map((criterion, index) => (
                   <div
                     key={index}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => openDraftCriterion(index)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        openDraftCriterion(index);
-                      }
-                    }}
                     className="flex flex-col items-start gap-1 rounded-xl border border-neonBlue/40 p-4 text-left transition hover:border-neonBlue/70 hover:bg-neonBlue/5"
                   >
                     <div className="flex w-full items-start justify-between gap-3">
@@ -317,16 +319,23 @@ export default function ConfigurationPage() {
                           {t("configuration.modal.criterion.multiplierLabel")}: {criterion.score_multiplier} · {t("configuration.modal.criterion.conceptLabel")}: {criterion.code_concept || t("configuration.modal.criterion.notSet")}
                         </span>
                       </div>
-                      <Button
-                        variant="ghost"
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          removeDraftCriterionAtIndex(index);
-                        }}
-                      >
-                        {t("configuration.modal.delete")}
-                      </Button>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="ghost"
+                          type="button"
+                          onClick={() => openDraftCriterion(index)}
+                        >
+                          {t("configuration.modal.editAction")}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          type="button"
+                          onClick={() => removeDraftCriterionAtIndex(index)}
+                          className="text-neonPink"
+                        >
+                          {t("configuration.modal.delete")}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}

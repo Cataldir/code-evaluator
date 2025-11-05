@@ -48,6 +48,8 @@
       "namePlaceholder": "Challenge name",
       "objectivePlaceholder": "Describe the core objective",
       "outcomePlaceholder": "Explain the expected outcome",
+      "activeLabel": "Active challenge",
+      "activeHelper": "Set whether the challenge should be enabled immediately.",
       "criteriaSection": "Evaluation criteria",
       "addCriterion": "Add criterion",
       "emptyCriteria": "No evaluation criteria yet. Add one to get started.",
@@ -55,6 +57,7 @@
       "addTitle": "Add evaluation criterion",
       "save": "Save",
       "add": "Add",
+      "editAction": "Edit criterion",
       "delete": "Delete criterion",
       "criterion": {
         "name": "Criteria name",
