@@ -5,8 +5,15 @@ import type { EvaluationDetail, EvaluationStatus, RankResponse } from "@/types/e
 import type { Repository } from "@/types/repository";
 import { LOCALE_STORAGE_KEY } from "@/i18n/settings";
 
+const defaultBaseUrl = "https://code-evaluator-project-c8efdzb3ctaxcvcz.eastus-01.azurewebsites.net/";
+
+const rawBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? defaultBaseUrl;
+const baseURL = rawBaseUrl.startsWith("http://") && !/localhost|127\.0\.0\.1/i.test(rawBaseUrl)
+  ? rawBaseUrl.replace(/^http:\/\//i, "https://")
+  : rawBaseUrl;
+
 const client = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://code-evaluator-project-c8efdzb3ctaxcvcz.eastus-01.azurewebsites.net/",
+  baseURL,
   headers: {
     "Content-Type": "application/json",
   },
