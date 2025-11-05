@@ -7,14 +7,8 @@ import { LOCALE_STORAGE_KEY } from "@/i18n/settings";
 
 const defaultBaseUrl = "https://code-evaluator-project-c8efdzb3ctaxcvcz.eastus-01.azurewebsites.net/";
 
-const rawBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? defaultBaseUrl;
-const normalizedBaseUrl = rawBaseUrl.trim();
-const baseURL = /^http:\/\//i.test(normalizedBaseUrl) && !/localhost|127\.0\.0\.1/i.test(normalizedBaseUrl)
-  ? normalizedBaseUrl.replace(/^http:\/\//i, "https://")
-  : normalizedBaseUrl;
-
 const client = axios.create({
-  baseURL,
+  baseURL: defaultBaseUrl,
   headers: {
     "Content-Type": "application/json",
   },
