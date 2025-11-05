@@ -44,6 +44,7 @@ def _serialize_challenge(doc: dict, criteria: List[dict]) -> ChallengeResponse:
 
 
 @router.get("/", response_model=List[ChallengeResponse])
+@router.get("", response_model=List[ChallengeResponse], include_in_schema=False)
 def list_challenges(db: CosmosDBClient = Depends(get_db_client)) -> List[ChallengeResponse]:
     challenges = db.list_challenges()
     results: List[ChallengeResponse] = []
@@ -54,6 +55,7 @@ def list_challenges(db: CosmosDBClient = Depends(get_db_client)) -> List[Challen
 
 
 @router.post("/", response_model=ChallengeResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ChallengeResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 def create_challenge(
     payload: ChallengeCreate,
     db: CosmosDBClient = Depends(get_db_client),

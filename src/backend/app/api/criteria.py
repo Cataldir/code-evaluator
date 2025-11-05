@@ -25,6 +25,7 @@ def _serialize(doc: dict) -> CriteriaResponse:
 
 
 @router.post("/", response_model=CriteriaResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CriteriaResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 def create_criteria(payload: CriteriaCreate, db: CosmosDBClient = Depends(get_db_client)) -> CriteriaResponse:
     criteria_id = str(uuid4())
     doc = {

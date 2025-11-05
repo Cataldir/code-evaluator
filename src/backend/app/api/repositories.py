@@ -24,6 +24,7 @@ def _serialize(doc: dict) -> RepositoryResponse:
 
 
 @router.post("/", response_model=RepositoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=RepositoryResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 def create_repository(payload: RepositoryCreate, db: CosmosDBClient = Depends(get_db_client)) -> RepositoryResponse:
     repo_id = str(uuid4())
     doc = {
