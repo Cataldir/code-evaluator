@@ -30,17 +30,33 @@ from .schema import EvaluationState
 _LOGGER = logging.getLogger(__name__)
 
 CODE_EVALUATION_SYSTEM_PROMPT = (
-    "You are an automated code quality evaluator for the FIAP Next Challenge.\n"
-    "Input: JSON with fields `criteria` and `repository`. The criteria object includes name, description, "
-    "score_multiplier, and code_concept. The repository object contains name, url, and a list of files, "
-    "where each file has a path and a code snippet.\n"
-    "Task: Review the supplied snippets, infer repository structure, and judge how well the repository "
-    "meets the intent of the criteria description and code_concept. Consider score_multiplier when "
-    "deciding importance, but the final score must stay between 0 and 100.\n"
-    "Output format (JSON only, no prose): {\"score\": <float 0-100>, \"reasoning\": <concise explanation>, "
-    "\"suggestion\": <actionable recommendation>. If information is insufficient, return score 0 with "
-    "an explanation describing what is missing."
-    "Your evaluation should be written in Portuguese-BR"
+    "Você é um avaliador automatizado extremamente rigoroso do FIAP Next Challenge.\n"
+    "Input: JSON contendo `criteria` e `repository`. O objeto criteria inclui name, description, "
+    "score_multiplier e code_concept. O objeto repository inclui name, url e uma lista completa de arquivos, "
+    "cada um com path e snippet de código.\n\n"
+    "Objetivo da avaliação:\n"
+    "- Julgar com rigor absoluto a aderência do repositório ao objetivo do desafio, às definições da criteria "
+    "(description e code_concept) e a quaisquer padrões implícitos nelas.\n"
+    "- Considerar cada critério de forma independente, verificando como cada arquivo e estrutura do repositório "
+    "contribui (ou compromete) a aderência a esse critério específico.\n"
+    "- Garantir que a avaliação cubra todo o repositório disponível: linguagem utilizada, organização de pastas, "
+    "nomenclatura, padrões arquiteturais, testes, documentação, pipelines e quaisquer artefatos relevantes.\n"
+    "- Penalizar fortemente incoerências, violações de padrões, ausência de requisitos essenciais ou desvios do "
+    "escopo do desafio.\n\n"
+    "Procedimento detalhado:\n"
+    "1. Compreenda o objetivo do desafio a partir de `criteria.description` e `criteria.code_concept`.\n"
+    "2. Analise a estrutura completa do repositório, inferindo contexto a partir do conjunto de arquivos.\n"
+    "3. Para cada critério, avalie cada arquivo/snippet verificando aderência técnica, qualidade, padrões da "
+    "linguagem, arquitetura, testes, documentação e alinhamento com o desafio.\n"
+    "4. Identifique lacunas, inconsistências ou violações e relacione-as claramente ao critério afetado.\n"
+    "5. Considere `score_multiplier` para ponderar a gravidade, mas mantenha o score final entre 0 e 100.\n"
+    "6. Se faltar informação essencial para avaliar algum critério, retorne score 0 e explique com exatidão o "
+    "que está ausente.\n"
+    "7. Não faça suposições positivas; ausência de evidência deve resultar em penalização.\n\n"
+    "Formato de saída (JSON, sem texto adicional): {\"score\": <float 0-100>, \"reasoning\": <explicação concisa>, "
+    "\"suggestion\": <recomendação acionável>. Razão e sugestão devem mencionar explicitamente os critérios "
+    "impactados e as partes do repositório analisadas.\n"
+    "A avaliação deve estar em Português-BR."
 )
 
 
@@ -253,6 +269,7 @@ class AzureAgentClient:
                 name=name,
                 model=model_name,
                 instructions=CODE_EVALUATION_SYSTEM_PROMPT,
+                temperature=0.1
             )
             _LOGGER.info("Created Azure AI Foundry agent '%s' with model '%s'", name, model_name)
             return agent
@@ -270,11 +287,11 @@ class AzureAgentClient:
             for agent in agents:
                 agent_name = getattr(agent, "name", None)
                 if agent_name == identifier:
+                    agent.temperature = 0.1
                     return agent
-        except ResourceNotFoundError:
+        except (ResourceNotFoundError, HttpResponseError) as exc:
+            _LOGGER.warning("Failed to list Azure AI Foundry agents: %s", exc)
             return None
-        except HttpResponseError as exc:
-            raise RuntimeError("Failed to list Azure AI Foundry agents") from exc
         return None
 
     def _extract_assistant_text(self, run: Any) -> str:
@@ -393,6 +410,7 @@ class EvaluationService:
         agent_client = self._ensure_challenge_agent(challenge)
         criteria = self._load_criteria(challenge_id, criteria_ids)
         repositories = self.db_client.list_repositories(challenge_id)
+        tasks: List[asyncio.Task[None]] = []
         for criterion in criteria:
             for repo_doc in repositories:
                 repo = RepositoryContext(
@@ -409,7 +427,9 @@ class EvaluationService:
                     criteria=criterion,
                     agent_client=agent_client,
                 )
-                await orchestrator.run()
+                tasks.append(asyncio.create_task(orchestrator.run()))
+        if tasks:
+            await asyncio.gather(*tasks)
 
     def _ensure_challenge_agent(self, challenge_doc: Dict[str, Any]) -> AzureAgentClient:
         agent_id = challenge_doc.get("agent_id")
